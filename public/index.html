@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birim Sarf Asistanı</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS File -->
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-icon">📊</span>
+                <div class="logo-text">
+                    <h1>Birim Sarf Asistanı</h1>
+                    <p>Yapay Zeka Destekli Fiziksel Kalıp ve Yerleşim Analiz Paneli</p>
+                </div>
+            </div>
+            <div class="server-status">
+                <span class="status-dot pulsing"></span>
+                <span id="statusText">Sistem Çevrimiçi - Hazır</span>
+            </div>
+        </header>
+
+        <!-- TABS NAVIGATION -->
+        <nav class="app-tabs" style="display: flex; gap: 10px; margin-top: -10px; margin-bottom: 10px; padding: 0;">
+            <button id="tabWorkspace" class="btn btn-primary" style="padding: 10px 20px; border-radius: 12px; font-weight: 600;">🛠️ Çalışma Alanı</button>
+            <button id="tabAiTraining" class="btn btn-secondary" style="padding: 10px 20px; border-radius: 12px; font-weight: 600; border: 1px solid var(--border-glass); background: rgba(255, 255, 255, 0.04); color: var(--text-main);">🤖 AI Eğitim</button>
+        </nav>
+
+        <div id="viewWorkspace">
+            <!-- Main Workspace: Split into Left and Right Panels -->
+            <main class="app-body">
+            <!-- LEFT PANEL: Smart AI Assistant Chat -->
+            <section class="panel left-panel">
+                <div class="panel-header">
+                    <h2>🤖 Akıllı Asistan</h2>
+                    <span class="panel-subtitle">Serbest metin veya ses ile parametre girişi yapın</span>
+                </div>
+                
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                <p>Merhaba! Ben sizin pastal ve birim tüketim analiz asistanınızım. 🧵</p>
+                                <p>Bana teknik föy detaylarını, beden ölçülerini ve asorti oranlarını yazarak veya sesli söyleyerek formu doldurtabilirsiniz.</p>
+                                <p><strong>Örnek:</strong> <i>"160 eninde kumaş, enine 5 boyuna 3 çekme var. Asorti 1-2-2-1 olcak. S bedende bel 60, basen 80, yan boy 30. M bedende bel 64, basen 84, yan boy 32."</i></p>
+                            </div>
+                            <span class="message-time" id="initialTime">12:00</span>
+                        </div>
+                    </div>
+                    
+                    <div id="attachmentArea" style="display: none; padding: 10px 20px; background: rgba(0,0,0,0.25); border-top: 1px solid var(--border-glass); align-items: center; gap: 8px;"></div>
+
+                    <div class="chat-input-area">
+                        <div class="input-wrapper">
+                            <input type="text" id="chatInput" placeholder="Mesajınızı yazın veya konuşun..." autocomplete="off">
+                            <button id="fileBtn" class="file-btn" title="Teknik Föy Yükle (PDF / Görsel)">
+                                <svg class="file-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                </svg>
+                            </button>
+                            <input type="file" id="fileInput" accept="application/pdf,image/*" style="display:none;">
+                            <button id="voiceBtn" class="voice-btn" title="Sesle Giriş (Mikrofon)">
+                                <svg class="mic-icon" viewBox="0 0 24 24" width="24" height="24">
+                                    <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.42 2.72 6.2 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <button id="sendBtn" class="send-btn">Gönder</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Structured Form & Inputs -->
+            <section class="panel right-panel">
+                <div class="panel-header">
+                    <h2>⚙️ Tüketim Çalışması Parametreleri</h2>
+                    <span class="panel-subtitle">Parametreleri kontrol edin ve hesaplamayı başlatın</span>
+                </div>
+
+                <div class="form-container">
+                    <form id="pastalForm" onsubmit="event.preventDefault();">
+                        <!-- Selects Row -->
+                        <div class="form-row select-row">
+                            <div class="form-group flex-1">
+                                <label for="kumasEn">Kumaş Eni (cm) *</label>
+                                <input type="number" id="kumasEn" placeholder="Örn: 150" required value="175" min="20" max="300">
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="modelSelect">Model Tanımları *</label>
+                                <div class="select-wrapper">
+                                    <select id="modelSelect" required>
+                                        <option value="" disabled selected>Model seçin...</option>
+                                    </select>
+                                    <button type="button" class="btn-inline-add" id="addModelBtn" title="Yeni Model Ekle">+</button>
+                                    <button type="button" class="btn-inline-add" id="deleteModelBtn" title="Seçili Modeli Sil" style="font-size: 0.95rem; border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.05);" onmouseover="this.style.background='#ef4444'; this.style.color='#fff'; this.style.borderColor='#ef4444';" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'; this.style.color='#ef4444'; this.style.borderColor='rgba(239, 68, 68, 0.4)';">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shrinkage Row -->
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="cekmeEn">Çekme En (%) *</label>
+                                <input type="number" id="cekmeEn" step="0.01" min="0" max="50" placeholder="Örn: 5.0" required value="0.00">
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="cekmeBoy">Çekme Boy (%) *</label>
+                                <input type="number" id="cekmeBoy" step="0.01" min="0" max="50" placeholder="Örn: 3.0" required value="0.00">
+                            </div>
+                        </div>
+
+                        <!-- Beden Grubu & Verimlilik Secimi -->
+                        <div class="form-row" style="margin-bottom: 12px; display: flex; gap: 10px;">
+                            <div class="form-group flex-1" style="margin-bottom: 0;">
+                                <label for="sizeGroupSelect">Beden Grubu (Size Group) *</label>
+                                <select id="sizeGroupSelect">
+                                    <option value="adult">Yetişkin (XS - XXL)</option>
+                                    <option value="child1">Çocuk (5y - 14y)</option>
+                                    <option value="child2">Bebek / Küçük Çocuk (9-12m - 7-8y)</option>
+                                    <option value="custom">Özel Bedenler</option>
+                                </select>
+                            </div>
+                            <div class="form-group flex-1" style="margin-bottom: 0; display: none;">
+                                <label for="verimlilikInput">Hedef Pastal Verimliliği (%) *</label>
+                                <input type="number" id="verimlilikInput" step="0.1" min="50" max="100" value="100.0" style="padding: 8px;">
+                            </div>
+                        </div>
+
+                        <!-- Checkboxes Row -->
+                        <div class="form-row" style="margin-bottom: 12px; align-items: center; display: flex; flex-direction: row; gap: 20px; padding-left: 2px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="cepKumastan" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px;" checked>
+                                <label for="cepKumastan" style="cursor: pointer; font-weight: 700; color: #f59e0b; margin-bottom: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; text-transform: uppercase;">
+                                    🧺 Cep Kumaştan
+                                </label>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="astarHesapla" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px;">
+                                <label for="astarHesapla" style="cursor: pointer; font-weight: 700; color: var(--color-secondary); margin-bottom: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; text-transform: uppercase;">
+                                    🧵 Astar (Lining)
+                                </label>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="tulHesapla" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px;">
+                                <label for="tulHesapla" style="cursor: pointer; font-weight: 700; color: var(--color-secondary); margin-bottom: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; text-transform: uppercase;">
+                                    ✨ Tül (Tulle)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="astarInputsContainer" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-glass); border-radius: 12px; padding: 12px; margin-bottom: 16px; animation: slideIn 0.3s ease;">
+                            <div class="form-row" style="margin-bottom: 0; display: flex; gap: 10px;">
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="astarEn">Astar Eni (cm)</label>
+                                    <input type="number" id="astarEn" value="140" min="20" max="300" style="padding: 8px;">
+                                </div>
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="astarCekmeEn">Astar Çekme En (%)</label>
+                                    <input type="number" id="astarCekmeEn" step="0.01" min="0" max="50" value="0.00" style="padding: 8px;">
+                                </div>
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="astarCekmeBoy">Astar Çekme Boy (%)</label>
+                                    <input type="number" id="astarCekmeBoy" step="0.01" min="0" max="50" value="0.00" style="padding: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tulInputsContainer" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-glass); border-radius: 12px; padding: 12px; margin-bottom: 16px; animation: slideIn 0.3s ease;">
+                            <div class="form-row" style="margin-bottom: 0; display: flex; gap: 10px;">
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="tulEn">Tül Eni (cm)</label>
+                                    <input type="number" id="tulEn" value="150" min="20" max="300" style="padding: 8px;">
+                                </div>
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="tulCekmeEn">Tül Çekme En (%)</label>
+                                    <input type="number" id="tulCekmeEn" step="0.01" min="0" max="50" value="0.00" style="padding: 8px;">
+                                </div>
+                                <div class="form-group flex-1" style="margin-bottom: 0;">
+                                    <label for="tulCekmeBoy">Tül Çekme Boy (%)</label>
+                                    <input type="number" id="tulCekmeBoy" step="0.01" min="0" max="50" value="0.00" style="padding: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Size Ratio / Asorti Panel (Dynamic) -->
+                        <div class="form-section">
+                            <div class="form-section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; margin-bottom: 12px;">
+                                <h3 style="color: var(--color-secondary); font-size: 0.88rem; font-weight: 700; margin: 0;">📐 Asorti Dağılımı (Miktar Oranı)</h3>
+                                <button type="button" class="btn-small-add" id="addCustomSizeBtn" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--color-secondary); color: var(--color-secondary); font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: var(--transition-smooth); display: none;">+ Özel Ekle</button>
+                            </div>
+                            <!-- Size Chips Selection Grid -->
+                            <div id="sizeChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-glass);">
+                                <!-- Dynamically populated size toggle chips -->
+                            </div>
+                            <div class="form-row asorti-row" id="asortiContainer" style="flex-wrap: wrap; gap: 12px; margin-bottom: 0;">
+                                <!-- Dynamically populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Kalıp Ölçüleri Tablosu (Dynamic Grid) -->
+                        <div class="form-section" id="measurementsSection" style="margin-top: 20px;">
+                            <div class="form-section-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; margin-bottom: 12px;">
+                                <h3 style="color: var(--color-secondary); font-size: 0.88rem; font-weight: 700; margin: 0;">📐 Kalıp Ölçüleri Tablosu (cm)</h3>
+                            </div>
+                            <div id="measurementsTableContainer" style="overflow-x: auto;">
+                                <!-- Renders dynamic measurement fields per size -->
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="clearFormBtn" class="btn btn-secondary">Temizle</button>
+                            <button type="button" id="calculateBtn" class="btn btn-primary">Hesapla ve Kaydet</button>
+                        </div>
+
+                        <!-- Feedback Panel (Shown when loading a history item) -->
+                        <div id="feedbackPanel" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-glass); animation: slideIn 0.3s ease;">
+                            <h3 style="color: var(--color-accent); font-size: 0.88rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                                <span>📝 Gerçekleşen Üretim Değerlerini Gir</span>
+                                <span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted); text-transform: none;">(Yapay zekayı gerçekleşen üretim verileriyle eğitin)</span>
+                            </h3>
+                            <input type="hidden" id="feedbackCalismaId">
+                            <div class="form-row" style="margin-bottom: 14px; gap: 16px;">
+                                <div class="form-group flex-1" id="feedbackKumasGroup">
+                                    <label for="feedbackTuketim">Gerçekleşen Kumaş Birim (Metre) *</label>
+                                    <input type="number" id="feedbackTuketim" step="0.001" min="0" placeholder="Örn: 0.350">
+                                </div>
+                                <div class="form-group flex-1" id="feedbackAstarGroup" style="display: none;">
+                                    <label for="feedbackAstarTuketim">Gerçekleşen Astar Birim (Metre) *</label>
+                                    <input type="number" id="feedbackAstarTuketim" step="0.001" min="0" placeholder="Örn: 0.310">
+                                </div>
+                                <div class="form-group flex-1" id="feedbackTulGroup" style="display: none;">
+                                    <label for="feedbackTulTuketim">Gerçekleşen Tül Birim (Metre) *</label>
+                                    <input type="number" id="feedbackTulTuketim" step="0.001" min="0" placeholder="Örn: 0.900">
+                                </div>
+                            </div>
+                            
+                            <!-- Gerçekleşen Kumaş Eni ve Çekme Oranları -->
+                            <div class="form-row" style="margin-bottom: 14px; gap: 16px;">
+                                <div class="form-group flex-1">
+                                    <label for="feedbackKumasEni">Gerçekleşen Kumaş Eni (cm) *</label>
+                                    <input type="number" id="feedbackKumasEni" placeholder="Örn: 152">
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label for="feedbackCekmeEn">Gerçekleşen Çekme En (%) *</label>
+                                    <input type="number" id="feedbackCekmeEn" step="0.01" min="0" placeholder="Örn: 2.00">
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label for="feedbackCekmeBoy">Gerçekleşen Çekme Boy (%) *</label>
+                                    <input type="number" id="feedbackCekmeBoy" step="0.01" min="0" placeholder="Örn: 3.00">
+                                </div>
+                            </div>
+                            
+                            <!-- Gerçekleşen Asorti Bilgisi (Manuel düzenleme için) -->
+                            <div id="feedbackAsortiContainer" style="margin-bottom: 14px; border: 1px solid var(--border-glass); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.02);">
+                                <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    📊 Gerçekleşen Beden Asorti Dağılımı
+                                </h4>
+                                <div id="feedbackAsortiGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
+                                    <!-- Dinamik olarak doldurulacak -->
+                                </div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top: 0; display: flex; gap: 10px; width: 100%;">
+                                <button type="button" id="saveFeedbackBtn" class="btn" style="background: rgba(236, 72, 153, 0.15); border: 1px solid var(--color-accent); color: var(--color-accent); flex: 2; font-size: 0.85rem; padding: 10px 0;">
+                                    Gerçekleşen Verileri Kaydet ve Yapay Zekayı Eğit
+                                </button>
+                                <button type="button" id="clearFeedbackBtn" class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; flex: 1; font-size: 0.85rem; padding: 10px 0;" title="Yapay zekaya öğretilen tüm gerçekleşen verileri siler">
+                                    Öğretilenleri Sil
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+
+        <!-- BOTTOM PANEL: Dashboard & Visual Analysis Summary -->
+        <footer class="app-footer">
+            <div class="footer-title">
+                <h2>📈 Tüketim Analiz Dashboard & Grafik Özet</h2>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- Large Metric Cards -->
+                <div class="metrics-container">
+                    <div class="metric-card main-metric">
+                        <div class="metric-info">
+                            <span class="metric-label">Birim Tüketim (m)</span>
+                            <span class="metric-val" id="metricBirimTuketim">0.00 m</span>
+                        </div>
+                        <div class="metric-icon">🧵</div>
+                    </div>
+                    
+                    <div class="metric-card main-metric highlighted">
+                        <div class="metric-info">
+                            <span class="metric-label">Pastal Boyu (m)</span>
+                            <span class="metric-val" id="metricPastalBoyu">0.00 m</span>
+                        </div>
+                        <div class="metric-icon">📏</div>
+                    </div>
+
+                    <!-- Secondary Metrics -->
+                    <div class="secondary-metrics">
+                        <div class="mini-card">
+                            <span class="mini-label">Toplam Net Alan (m²)</span>
+                            <span class="mini-val" id="valNetMetraj">0.00 m²</span>
+                        </div>
+                        <div class="mini-card">
+                            <span class="mini-label">Çekme Katsayısı</span>
+                            <span class="mini-val" id="valCekmeFaktoru">1.000</span>
+                        </div>
+                        <div class="mini-card">
+                            <span class="mini-label">Toplam Asorti</span>
+                            <span class="mini-val" id="valToplamAsorti">0 Adet</span>
+                        </div>
+                        <div class="mini-card">
+                            <span class="mini-label">Pastal Verimliliği</span>
+                            <span class="mini-val" id="valVerimlilik">%100.0</span>
+                        </div>
+                        <div class="mini-card" id="valAstarBirimCard" style="display: none; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.25);">
+                            <span class="mini-label" style="color: var(--color-secondary); font-weight: 700;">Astar Birim Tüketim (m)</span>
+                            <span class="mini-val" id="valAstarBirim">0.00 m</span>
+                        </div>
+                        <div class="mini-card" id="valAstarPastalCard" style="display: none; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.25);">
+                            <span class="mini-label" style="color: var(--color-secondary); font-weight: 700;">Astar Pastal Boyu (m)</span>
+                            <span class="mini-val" id="valAstarPastal">0.00 m</span>
+                        </div>
+                        <div class="mini-card" id="valTulBirimCard" style="display: none; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.25);">
+                            <span class="mini-label" style="color: var(--color-accent); font-weight: 700;">Tül Birim Tüketim (m)</span>
+                            <span class="mini-val" id="valTulBirim">0.00 m</span>
+                        </div>
+                        <div class="mini-card" id="valTulPastalCard" style="display: none; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.25);">
+                            <span class="mini-label" style="color: var(--color-accent); font-weight: 700;">Tül Pastal Boyu (m)</span>
+                            <span class="mini-val" id="valTulPastal">0.00 m</span>
+                        </div>
+                        <div class="mini-card" id="valCepBirimCard" style="display: none; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25);">
+                            <span class="mini-label" style="color: #f59e0b; font-weight: 700;">Cep Astarı Birim (m)</span>
+                            <span class="mini-val" id="valCepBirim">0.00 m</span>
+                        </div>
+                        <div class="mini-card" id="valCepPastalCard" style="display: none; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25);">
+                            <span class="mini-label" style="color: #f59e0b; font-weight: 700;">Cep Astarı Pastal (m)</span>
+                            <span class="mini-val" id="valCepPastal">0.00 m</span>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- Cost Breakdown Chart -->
+                <div class="chart-container">
+                    <h3>📊 Bedenlere Göre Net Kalıp Alanı (m²)</h3>
+                    <div class="canvas-wrapper">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- DATABASE HISTORY PANEL: Collapsible Table for Past Work -->
+        <section class="panel history-panel">
+            <div class="panel-header clickable-header" id="historyHeader">
+                <div class="header-left">
+                    <h2>📚 Geçmiş Hesaplama Çalışmaları</h2>
+                    <span class="panel-subtitle" id="historyCount">0 Kayıt Bulundu</span>
+                </div>
+                <div class="header-right">
+                    <span class="toggle-icon" id="historyToggle">▲</span>
+                </div>
+            </div>
+            <div class="history-content" id="historyContent">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Model</th>
+                                <th>Ürün Grubu</th>
+                                <th>Kumaş Eni (cm)</th>
+                                <th>Çekme (En/Boy)</th>
+                                <th>Asorti Dağılımı</th>
+                                <th>Birim Tüketim (m)</th>
+                                <th>Pastal Boyu (m)</th>
+                                <th>Gerçekleşen Tüketim (m)</th>
+                                <th style="width: 60px; text-align: center;">Sil</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="10" class="empty-row-text">Henüz kayıtlı bir çalışma bulunmamaktadır.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        </div> <!-- End viewWorkspace -->
+
+        <div id="viewAiTraining" style="display: none;">
+            <!-- MANUEL KURAL EKLEME PANELİ -->
+            <section class="panel" style="margin-bottom: 20px;">
+                <div class="panel-header">
+                    <h2>📝 Analiz ve Hesaplama Kuralları (Manuel)</h2>
+                    <span class="panel-subtitle">Yapay zekanın analiz veya hesaplama yaparken dikkate alması gereken kuralları belirleyin.</span>
+                </div>
+                <div class="form-container" style="padding: 24px;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="manualRuleText">Kural Açıklaması</label>
+                        <textarea id="manualRuleText" rows="3" placeholder='Örn: "Oversize ürünlerde kol boyu hesabına şöyle bakmalısın..."' style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.1); color: var(--text-main); font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
+                    </div>
+                    <div style="text-align: right;">
+                        <button type="button" id="saveManualRuleBtn" class="btn btn-primary">Kuralı Kaydet</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI EĞİTİM PANELİ -->
+            <section class="panel history-panel" style="height: auto; min-height: 400px;">
+                <div class="panel-header">
+                    <h2>🤖 Yapay Zeka Öğrenme Geçmişi</h2>
+                    <span class="panel-subtitle">Kullanıcı düzeltmeleri, gerçekleşen veriler ve manuel kurallarla eğitilen modeller</span>
+                </div>
+                <div class="history-content" style="padding: 24px;">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Düzeltme Tipi</th>
+                                    <th>Hatalı Çıkarım (PDF)</th>
+                                    <th>Doğru Değer (Kullanıcı)</th>
+                                    <th style="width: 80px; text-align: center;">Sil</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aiTrainingTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-row-text">Yükleniyor...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    <!-- MODAL FOR NEW MODEL -->
+    <div class="modal" id="modelModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Yeni Model Tanımı Ekle</h2>
+                <span class="modal-close" id="modelModalClose">&times;</span>
+            </div>
+            <form id="modelForm" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label for="newModelName">Model Adı *</label>
+                    <input type="text" id="newModelName" placeholder="Örn: Relaxed Sweatshirt, Cargo Pant..." required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="newModelGroup">Ürün Grubu *</label>
+                        <select id="newModelGroup" required>
+                            <option value="" disabled selected>Seçin...</option>
+                            <option value="Alt Giyim">Alt Giyim</option>
+                            <option value="Üst Giyim">Üst Giyim</option>
+                            <option value="Elbise">Elbise</option>
+                            <option value="Tulum">Tulum</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="modelCancelBtn">İptal</button>
+                    <button type="submit" class="btn btn-primary" id="modelSaveBtn">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script File -->
+    <script>
+        window.addEventListener('error', function(e) {
+            alert("Sistem Hatası (JavaScript):\n" + e.message + "\n\nDosya: " + e.filename + "\nSatır: " + e.lineno);
+        });
+    </script>
+    <script src="app.js?v=3"></script>
+</body>
+</html>
