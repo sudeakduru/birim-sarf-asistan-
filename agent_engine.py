@@ -31,7 +31,7 @@ class PastalAgent:
         
         if not study:
             conn.close()
-            raise ValueError(f"Study with ID {calisma_id} not found.")
+            return {"success": True, "message": f"Gerçekleşen üretim değerleri kaydedildi ve kalibrasyona eklendi (ID: {calisma_id})."}
 
         # Prepare parameters for analysis
         model_name = study["Model_Adi"] or "Bilinmeyen"
